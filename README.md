@@ -167,29 +167,100 @@ If successful:
 
 ---
 
-## 🔜 Upcoming Work
+---
 
-* Attendance API (face matching using stored embeddings)
-* Similarity search using pgvector operators
-* Indexing for faster search
+# 🧑‍🤝‍🧑 Attendance API
+
+Marks attendance by detecting **multiple faces** in a single image and matching them against registered students.
+
+---
+
+### Endpoint
+
+<pre class="overflow-visible! px-0!" data-start="2522" data-end="2550"><div class="w-full my-4"><div class=""><div class="relative"><div class="h-full min-h-0 min-w-0"><div class="h-full min-h-0 min-w-0"><div class="border corner-superellipse/1.1 border-token-border-light bg-token-bg-elevated-secondary rounded-3xl"><div class="pointer-events-none absolute inset-x-4 top-12 bottom-4"><div class="pointer-events-none sticky z-40 shrink-0 z-1!"><div class="sticky bg-token-border-light"></div></div></div><div class="pointer-events-none absolute inset-x-px top-0 bottom-96"><div class="pointer-events-none sticky z-40 shrink-0 z-1!"><div class="sticky bg-token-bg-elevated-secondary"></div></div></div><div class="corner-superellipse/1.1 rounded-3xl bg-token-bg-elevated-secondary"><div class="relative z-0 flex max-w-full"><div id="code-block-viewer" dir="ltr" class="q9tKkq_viewer cm-editor z-10 light:cm-light dark:cm-light flex h-full w-full flex-col items-stretch ͼk ͼy"><div class="cm-scroller"><div class="cm-content q9tKkq_readonly"><span>POST /api/attendance</span></div></div></div></div></div></div></div></div><div class=""><div class=""></div></div></div></div></div></pre>
+
+### Input (form-data)
+
+| Key   | Type | Description                              |
+| ----- | ---- | ---------------------------------------- |
+| image | File | Image containing**multiple faces** |
+
+---
+
+### Flow
+
+1. Receive group image
+2. Send image to ML service
+3. ML returns embeddings for each detected face
+4. For each embedding:
+   * Find closest student using `pgvector`
+   * Apply distance threshold
+5. Return list of present students
+
+---
+
+### ML Response Format (Attendance)
+
+<pre class="overflow-visible! px-0!" data-start="2976" data-end="3127"><div class="w-full my-4"><div class=""><div class="relative"><div class="h-full min-h-0 min-w-0"><div class="h-full min-h-0 min-w-0"><div class="border corner-superellipse/1.1 border-token-border-light bg-token-bg-elevated-secondary rounded-3xl"><div class="pointer-events-none absolute inset-x-4 top-12 bottom-4"><div class="pointer-events-none sticky z-40 shrink-0 z-1!"><div class="sticky bg-token-border-light"></div></div></div><div class="pointer-events-none absolute inset-x-px top-0 bottom-96"><div class="pointer-events-none sticky z-40 shrink-0 z-1!"><div class="sticky bg-token-bg-elevated-secondary"></div></div></div><div class="corner-superellipse/1.1 rounded-3xl bg-token-bg-elevated-secondary"><div class="relative z-0 flex max-w-full"><div id="code-block-viewer" dir="ltr" class="q9tKkq_viewer cm-editor z-10 light:cm-light dark:cm-light flex h-full w-full flex-col items-stretch ͼk ͼy"><div class="cm-scroller"><div class="cm-content q9tKkq_readonly"><span>{</span><br/><span>  "success": </span><span class="ͼq">true</span><span>,</span><br/><span>  "faces_detected": </span><span class="ͼq">3</span><span>,</span><br/><span>  "faces": [</span><br/><span>    {</span><br/><span>      "bbox": [x</span><span class="ͼq">1</span><span>, y</span><span class="ͼq">1</span><span>, x</span><span class="ͼq">2</span><span>, y</span><span class="ͼq">2</span><span>],</span><br/><span>      "embedding": [</span><span class="ͼq">512</span><span> numbers]</span><br/><span>    }</span><br/><span>  ]</span><br/><span>}</span></div></div></div></div></div></div></div></div><div class=""><div class=""></div></div></div></div></div></pre>
+
+---
+
+### Similarity Query Used
+
+<pre class="overflow-visible! px-0!" data-start="3160" data-end="3257"><div class="w-full my-4"><div class=""><div class="relative"><div class="h-full min-h-0 min-w-0"><div class="h-full min-h-0 min-w-0"><div class="border corner-superellipse/1.1 border-token-border-light bg-token-bg-elevated-secondary rounded-3xl"><div class="pointer-events-none absolute inset-x-4 top-12 bottom-4"><div class="pointer-events-none sticky z-40 shrink-0 z-1!"><div class="sticky bg-token-border-light"></div></div></div><div class="pointer-events-none absolute inset-x-px top-0 bottom-96"><div class="pointer-events-none sticky z-40 shrink-0 z-1!"><div class="sticky bg-token-bg-elevated-secondary"></div></div></div><div class="corner-superellipse/1.1 rounded-3xl bg-token-bg-elevated-secondary"><div class="relative z-0 flex max-w-full"><div id="code-block-viewer" dir="ltr" class="q9tKkq_viewer cm-editor z-10 light:cm-light dark:cm-light flex h-full w-full flex-col items-stretch ͼk ͼy"><div class="cm-scroller"><div class="cm-content q9tKkq_readonly"><span class="ͼn">SELECT</span><span> id, name, embedding </span><span class="ͼn"><=></span><span> $</span><span class="ͼq">1</span><span></span><span class="ͼn">AS</span><span> distance</span><br/><span class="ͼn">FROM</span><span> students</span><br/><span class="ͼn">ORDER</span><span></span><span class="ͼn">BY</span><span> distance</span><br/><span class="ͼn">LIMIT</span><span></span><span class="ͼq">1</span><span>;</span></div></div></div></div></div></div></div></div><div class=""><div class=""></div></div></div></div></div></pre>
+
+---
+
+### Matching Threshold
+
+<pre class="overflow-visible! px-0!" data-start="3287" data-end="3336"><div class="w-full my-4"><div class=""><div class="relative"><div class="h-full min-h-0 min-w-0"><div class="h-full min-h-0 min-w-0"><div class="border corner-superellipse/1.1 border-token-border-light bg-token-bg-elevated-secondary rounded-3xl"><div class="pointer-events-none absolute inset-x-4 top-12 bottom-4"><div class="pointer-events-none sticky z-40 shrink-0 z-1!"><div class="sticky bg-token-border-light"></div></div></div><div class="pointer-events-none absolute inset-x-px top-0 bottom-96"><div class="pointer-events-none sticky z-40 shrink-0 z-1!"><div class="sticky bg-token-bg-elevated-secondary"></div></div></div><div class="corner-superellipse/1.1 rounded-3xl bg-token-bg-elevated-secondary"><div class="relative z-0 flex max-w-full"><div id="code-block-viewer" dir="ltr" class="q9tKkq_viewer cm-editor z-10 light:cm-light dark:cm-light flex h-full w-full flex-col items-stretch ͼk ͼy"><div class="cm-scroller"><div class="cm-content q9tKkq_readonly"><span class="ͼn">const</span><span></span><span class="ͼt">MATCH_THRESHOLD</span><span></span><span class="ͼn">=</span><span></span><span class="ͼq">0.3</span><span>; </span><span class="ͼl">// tunable</span></div></div></div></div></div></div></div></div><div class=""><div class=""></div></div></div></div></div></pre>
+
+* Lower = stricter matching
+* Higher = more lenient
+
+---
+
+### Example Response
+
+<pre class="overflow-visible! px-0!" data-start="3417" data-end="3573"><div class="w-full my-4"><div class=""><div class="relative"><div class="h-full min-h-0 min-w-0"><div class="h-full min-h-0 min-w-0"><div class="border corner-superellipse/1.1 border-token-border-light bg-token-bg-elevated-secondary rounded-3xl"><div class="pointer-events-none absolute inset-x-4 top-12 bottom-4"><div class="pointer-events-none sticky z-40 shrink-0 z-1!"><div class="sticky bg-token-border-light"></div></div></div><div class="pointer-events-none absolute inset-x-px top-0 bottom-96"><div class="pointer-events-none sticky z-40 shrink-0 z-1!"><div class="sticky bg-token-bg-elevated-secondary"></div></div></div><div class="corner-superellipse/1.1 rounded-3xl bg-token-bg-elevated-secondary"><div class="relative z-0 flex max-w-full"><div id="code-block-viewer" dir="ltr" class="q9tKkq_viewer cm-editor z-10 light:cm-light dark:cm-light flex h-full w-full flex-col items-stretch ͼk ͼy"><div class="cm-scroller"><div class="cm-content q9tKkq_readonly"><span>{</span><br/><span>  "present_students": [</span><br/><span>    { "id": </span><span class="ͼq">1</span><span>, "name": </span><span class="ͼr">"Aman"</span><span> },</span><br/><span>    { "id": </span><span class="ͼq">2</span><span>, "name": </span><span class="ͼr">"Riya"</span><span> },</span><br/><span>    { "id": </span><span class="ͼq">3</span><span>, "name": </span><span class="ͼr">"Kunal"</span><span> }</span><br/><span>  ],</span><br/><span>  "count": </span><span class="ͼq">3</span><br/><span>}</span></div></div></div></div></div></div></div></div><div class=""><div class=""></div></div></div></div></div></pre>
+
+---
+
+## 🧠 Design Decisions
+
+* ML service is **stateless**
+* Backend is responsible for:
+  * Validation
+  * Storage
+  * Matching logic
+* `pgvector` used for fast cosine similarity
+* Duplicate attendance avoided using `Map`
+
+---
+
+## 🛠️ Current Status
+
+* ✅ Registration API complete
+* ✅ Attendance API complete
+* ✅ ML integration working
+* ✅ pgvector similarity search working
+
+---
+
+## 🚀 Future Improvements
+
+* Confidence score from ML
+* Bounding-box based validation
+* Attendance session IDs
+* Duplicate registration prevention
+* Indexing vectors (`ivfflat` / `hnsw`)
 * Hasura integration for GraphQL exposure
 
 ---
 
-## ✅ Current Status
+## 🧪 Testing
 
-* ✔ Registration API implemented
-* ✔ Embedding service integrated
-* ✔ pgvector storage working
-* ✔ Ready for attendance feature expansion
-
----
-
-## 👥 Team Ownership
-
-* **Registration API & DB** : Backend Team
-* **Embedding Service** : ML Team
-
-Both services communicate strictly via the defined API contract.
-
----
+* APIs tested using **Postman**
+* Images tested:
+  * Single-face images (registration)
+  * Multi-face classroom images (attendance)
